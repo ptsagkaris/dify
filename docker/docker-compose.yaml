@@ -698,14 +698,17 @@ services:
     depends_on:
       - api
       - web
-    # Behind Dokploy's Traefik reverse proxy: do NOT publish ports 80/443 on the
-    # host (dokploy-traefik already binds them, which caused
-    # "Bind for 0.0.0.0:80 failed: port is already allocated"). Instead, join the
-    # external dokploy-network so Traefik can route a domain to this nginx
-    # service on its internal port 80. Add a Domain in the Dokploy UI for the
-    # "nginx" service on container port 80; Traefik terminates TLS at the edge.
+    # Do NOT bind host ports 80/443 here: dokploy-traefik already owns them, which
+    # caused "Bind for 0.0.0.0:80 failed: port is already allocated".
+    # Instead publish a NON-conflicting host port for direct local LAN access at
+    # http://<server-ip>:8080 . Override with EXPOSE_NGINX_PORT in the Dokploy
+    # environment if 8080 is taken. The service also stays on dokploy-network, so
+    # you can ALSO route a real domain through Traefik later (Dokploy UI -> the
+    # app -> Domains -> service "nginx", container port 80).
     expose:
       - "${NGINX_PORT:-80}"
+    ports:
+      - "${EXPOSE_NGINX_PORT:-8080}:${NGINX_PORT:-80}"
     networks:
       - default
       - dokploy-network
